@@ -62,11 +62,13 @@ html_boiler = """
                 dataType: 'text',
                 type: 'get',
                 success: function(doc){
-                    $('#content').fadeTo(1, 0);
-                    $('#content').html(doc);
-                    $('#content').fadeTo(500, 1);
-                    setTimeout('getContent()', 100);
+                    if (doc != "") {
+                        $('#content').fadeTo(1, 0);
+                        $('#content').html(doc);
+                        $('#content').fadeTo(500, 1);
                     }
+                    setTimeout('getContent()', 100);
+                }
             });
         }
         getContent();
@@ -119,7 +121,13 @@ class LongPoll:
         global last_refresh
         webpy.header('Content-type', 'text/html')
         last_seen = file_mtime(page_name)
+        counter = 0
         while last_seen == file_mtime(page_name):
+            counter += 1
+            if counter >= 10:
+                print "stop %s long poll." % page_name
+                return ""
+            print "%s poll" % page_name
             time.sleep(1)
         return file_data(page_name)
 
@@ -129,7 +137,13 @@ class LongPollIndex:
         path = os.getcwd()
         webpy.header('Content-type', 'text/html')
         last_dir = get_dir()
+        counter = 0
         while last_dir == get_dir():
+            counter += 1
+            if counter >= 10:
+                print "stop index long poll."
+                return ""
+            print "index poll"
             time.sleep(1)
         return index_data()
 
@@ -138,10 +152,17 @@ class LongPollGit:
         def get_head():
             return "".join(run_command("git show-ref -s".split())).strip()
 
+        counter = 0
         webpy.header('Content-type', 'text/html')
         last_git = get_head()
         print last_git
         while last_git == get_head():
+            # Stop long poll after a while,
+            # The window may have been closed meanwhile
+            counter += 1
+            if counter >= 10:
+                print "stop git long poll."
+                return ""
             print "git head poll... " + get_head()
             time.sleep(1)
         print "************** new commit: " + get_head()
