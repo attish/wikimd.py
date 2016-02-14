@@ -22,6 +22,58 @@ urls = (
     '/jquery.js', 'jQuery'
     )
 
+# Outer HTML boilerplate
+# Params:
+#   %s style
+#   %s content
+#   %s longpoll_url
+html_boiler = """
+<html>
+    <head>
+        <title>WikiMD</title>
+        <meta charset="UTF-8">
+        <script type="text/javascript" src="/jquery.js"></script>
+<style>
+%s
+</style>
+    </head>
+    <body>
+        <input name="stop" type="button" value="Stop" onclick="stop()"></input>
+        <a href="/">Index</a>
+        <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
+        <div class="container">
+        <div id="content">%s</div>
+        </div>
+    <script type="text/javascript">
+        function stop() {
+            $.ajax({url: '/stop'});
+            $('#stop').hide();
+            $('#closed').show(400);
+            $('#content').css('color', 'lightgrey');
+        }
+
+
+        function getContent() {
+            $.ajax({
+                url: '%s',
+                dataType: 'text',
+                type: 'get',
+                success: function(doc){
+                    $('#content').fadeTo(1, 0);
+                    $('#content').html(doc);
+                    $('#content').fadeTo(500, 1);
+                    setTimeout('getContent()', 100);
+                    }
+            });
+        }
+        getContent();
+    </script>
+    </body>
+</html>
+"""
+
+
+
 def file_mtime(fname):
     return datetime.datetime.fromtimestamp(os.path.getmtime(fname))
 
@@ -36,11 +88,11 @@ def title_line(file_name):
 
 def index_data():
     link_boiler = "<tr><td><a href='wiki/%s'>%s</a></td></tr>"
-    html_boiler = "<h1>Index</h1><table class=\"table\">%s</table>"
+    index_boiler = "<h1>Index</h1><table class=\"table\">%s</table>"
     pwd = os.getcwd()
     files = [(f, title_line(f)) for f in os.listdir(pwd) if f.endswith(".md")]
     links = [link_boiler % (f[0], f[1]) for f in files]
-    return html_boiler % '\n'.join(links)
+    return index_boiler % '\n'.join(links)
 
 def get_dir():
 # From http://timgolden.me.uk/python/win32_how_do_i/watch_directory_for_changes.html
@@ -78,109 +130,19 @@ class Frame:
     def GET(self, page_name):
         randnum = random.randint(0, 2000000000)
         data = file_data(page_name)
-        page = """
-        <html>
-            <head>
-                <title>Markdown viewer</title>
-                <meta charset="UTF-8">
-                <script type="text/javascript" src="/jquery.js"></script>
-<style>
-%s
-</style>
-            </head>
-            <body>
-                <input name="stop" type="button" value="Stop" onclick="stop()"></input>
-                <a href="/">Index</a>
-                <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
-                <div class="container">
-                <div id="content">%s</div>
-                </div>
-            <script type="text/javascript">
-                function stop() {
-                    $.ajax({url: '/stop'});
-                    $('#stop').hide();
-                    $('#closed').show(400);
-                    $('#content').css('color', 'lightgrey');
-                }
-
-
-                function getContent() {
-                    $.ajax({
-                        url: '/longpoll/%d/%s',
-                        dataType: 'text',
-                        type: 'get',
-                        success: function(doc){
-                            $('#content').fadeTo(1, 0);
-                            $('#content').html(doc);
-                            $('#content').fadeTo(500, 1);
-                            setTimeout('getContent()', 100);
-                            }
-                    });
-                }
-                getContent();
-            </script>
-            </body>
-        </html>
-        """
-#        return page % (data, randnum)
         style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
-        return page % (style, data, randnum, page_name)
-        #return page % (randnum, data)
-        #return "<head><script>alert('a');</script></head>"
-
+        longpoll_url = '/longpoll/%d/%s' % (randnum, page_name)
+        page = html_boiler % (style, data, longpoll_url)
+        return page
 
 class Index:
     def GET(self):
         randnum = random.randint(0, 2000000000)
         data = index_data()
-        page = """
-        <html>
-            <head>
-                <title>Markdown viewer</title>
-                <meta charset="UTF-8">
-                <script type="text/javascript" src="/jquery.js"></script>
-<style>
-%s
-</style>
-            </head>
-            <body>
-                <input name="stop" type="button" value="Stop" onclick="stop()"></input>
-                <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
-                <div class="container">
-                <div id="content">%s</div>
-                </div>
-            <script type="text/javascript">
-                function stop() {
-                    $.ajax({url: '/stop'});
-                    $('#stop').hide();
-                    $('#closed').show(400);
-                    $('#content').css('color', 'lightgrey');
-                }
-
-
-                function getContent() {
-                    $.ajax({
-                        url: '/longpoll-index/%d',
-                        dataType: 'text',
-                        type: 'get',
-                        success: function(doc){
-                            $('#content').fadeTo(1, 0);
-                            $('#content').html(doc);
-                            $('#content').fadeTo(500, 1);
-                            setTimeout('getContent()', 100);
-                            }
-                    });
-                }
-                getContent();
-            </script>
-            </body>
-        </html>
-        """
-#        return page % (data, randnum)
         style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
-        return page % (style, data, randnum)
-        #return page % (randnum, data)
-        #return "<head><script>alert('a');</script></head>"
+        longpoll_url = '/longpoll-index/%d' % randnum 
+        page = html_boiler % (style, data, longpoll_url)
+        return page
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
