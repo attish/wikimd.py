@@ -90,6 +90,7 @@ class Frame:
             </head>
             <body>
                 <input name="stop" type="button" value="Stop" onclick="stop()"></input>
+                <a href="/">Index</a>
                 <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
                 <div class="container">
                 <div id="content">%s</div>
