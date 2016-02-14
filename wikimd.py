@@ -2,6 +2,7 @@
 
 import web as webpy
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -16,8 +17,10 @@ count = 0
 urls = (
     '/wiki/(.*)', 'Frame',
     '/', 'Index',
+    '/git', 'Git',
     '/longpoll/([0-9]+)/(.*)', 'LongPoll',
     '/longpoll-index/([0-9]+)', 'LongPollIndex',
+    '/longpoll-git/([0-9]+)', 'LongPollGit',
     '/stop', 'Stop',
     '/jquery.js', 'jQuery'
     )
@@ -73,6 +76,12 @@ html_boiler = """
 """
 
 
+def run_command(command):
+# By Max Persson. http://stackoverflow.com/a/13135985
+    p = subprocess.Popen(command,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    return iter(p.stdout.readline, b'')
 
 def file_mtime(fname):
     return datetime.datetime.fromtimestamp(os.path.getmtime(fname))
@@ -93,6 +102,12 @@ def index_data():
     files = [(f, title_line(f)) for f in os.listdir(pwd) if f.endswith(".md")]
     links = [link_boiler % (f[0], f[1]) for f in files]
     return index_boiler % '\n'.join(links)
+
+def git_data():
+    is_git = not os.system('git rev-parse')
+    commit_list = '<br>'.join(run_command("git log --oneline".split()))
+    git_content = no_git if (not is_git) else commit_list
+    return "<h1>Git</h1>" + commit_list
 
 def get_dir():
 # From http://timgolden.me.uk/python/win32_how_do_i/watch_directory_for_changes.html
@@ -118,6 +133,20 @@ class LongPollIndex:
             time.sleep(1)
         return index_data()
 
+class LongPollGit:
+    def GET(self, session_id):
+        def get_head():
+            return "".join(run_command("git show-ref -s".split())).strip()
+
+        webpy.header('Content-type', 'text/html')
+        last_git = get_head()
+        print last_git
+        while last_git == get_head():
+            print "git head poll... " + get_head()
+            time.sleep(1)
+        print "************** new commit: " + get_head()
+        return git_data()
+
 class Stop:
     def GET(self):
         os._exit(0)
@@ -142,6 +171,20 @@ class Index:
         style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
         longpoll_url = '/longpoll-index/%d' % randnum 
         page = html_boiler % (style, data, longpoll_url)
+        return page
+
+class Git:
+    def GET(self):
+        no_git = """
+<div class="alert alert-danger" role="alert">
+  <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+  <span class="sr-only">Error:</span>
+  Directory is not a  git repository!
+</div>"""
+        randnum = random.randint(0, 2000000000)
+        style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
+        longpoll_url = '/longpoll-git/%d' % randnum 
+        page = html_boiler % (style, git_data(), longpoll_url)
         return page
 
 if __name__ == '__main__':
