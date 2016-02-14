@@ -30,12 +30,16 @@ def file_data(fname):
         data = f.read()
     return markdown.markdown(data, tab_length=2)
 
+def title_line(file_name):
+    with open(file_name, 'r') as f:
+        return f.readline()
+
 def index_data():
-    link_boiler = "<tr><td><a href='wiki/%s.md'>%s</a></td></tr>"
+    link_boiler = "<tr><td><a href='wiki/%s'>%s</a></td></tr>"
     html_boiler = "<h1>Index</h1><table class=\"table\">%s</table>"
     pwd = os.getcwd()
-    files = [f[:-3] for f in os.listdir(pwd) if f.endswith(".md")]
-    links = [link_boiler % (f, f) for f in files]
+    files = [(f, title_line(f)) for f in os.listdir(pwd) if f.endswith(".md")]
+    links = [link_boiler % (f[0], f[1]) for f in files]
     return html_boiler % '\n'.join(links)
 
 def get_dir():
