@@ -17,20 +17,55 @@ count = 0
 urls = (
     '/wiki/(.*)', 'Frame',
     '/', 'Index',
-    '/git', 'Git',
     '/longpoll/([0-9]+)/(.*)', 'LongPoll',
     '/longpoll-index/([0-9]+)', 'LongPollIndex',
+    '/git', 'Git',
+    '/commit/([0-9a-f]+)', 'CommitIndex',
     '/longpoll-git/([0-9]+)', 'LongPollGit',
     '/stop', 'Stop',
     '/jquery.js', 'jQuery'
     )
 
-# Outer HTML boilerplate
+# Outer static HTML boilerplate
+# Params:
+#   %s style
+#   %s content
+html_boiler = """
+<html>
+    <head>
+        <title>WikiMD</title>
+        <meta charset="UTF-8">
+        <script type="text/javascript" src="/jquery.js"></script>
+<style>
+%s
+</style>
+    </head>
+    <body>
+        <input name="stop" type="button" value="Stop" onclick="stop()"></input>
+        <a href="/">Index</a>&nbsp;|&nbsp;
+        <a href="/git">Git</a>
+        <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
+        <div class="container">
+        <div id="content">%s</div>
+        </div>
+    <script type="text/javascript">
+        function stop() {
+            $.ajax({url: '/stop'});
+            $('#stop').hide();
+            $('#closed').show(400);
+            $('#content').css('color', 'lightgrey');
+        }
+    </script>
+    </body>
+</html>
+"""
+
+# Outer live HTML boilerplate (with longpoll)
 # Params:
 #   %s style
 #   %s content
 #   %s longpoll_url
-html_boiler = """
+html_live_boiler = """
 <html>
     <head>
         <title>WikiMD</title>
@@ -98,6 +133,11 @@ def title_line(file_name):
     with open(file_name, 'r') as f:
         return f.readline()
 
+def git_title_line(commit, file_name):
+    git_command = ("git show " + commit + ":" + file_name).split()
+    file_lines = run_command(git_command)
+    return file_lines.next()
+
 def index_data():
     link_boiler = "<tr><td><a href='wiki/%s'>%s</a></td></tr>"
     index_boiler = "<h1>Index</h1><table class=\"table\">%s</table>"
@@ -105,6 +145,18 @@ def index_data():
     files = [(f, title_line(f)) for f in os.listdir(pwd) if f.endswith(".md")]
     links = [link_boiler % (f[0], f[1]) for f in files]
     return index_boiler % '\n'.join(links)
+
+def commit_index_data(commit):
+    link_boiler = "<tr><td><a href='/git-wiki/%s/%s'>%s</a></td></tr>"
+    index_boiler = "<h1>Index at %s</h1><table class=\"table\">%s</table>"
+    pwd = os.getcwd()
+    git_command = ("git ls-tree --name-only -r " + commit).split()
+    commit_files = run_command(git_command)
+    files = [(f, git_title_line(commit, f))
+                for f in commit_files
+                if f.strip().endswith(".md")]
+    links = [link_boiler % (commit, f[0], f[1]) for f in files]
+    return index_boiler % (commit, '\n'.join(links))
 
 def git_data():
     is_git = not os.system('git rev-parse')
@@ -202,7 +254,7 @@ class Frame:
         data = file_data(page_name)
         style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
         longpoll_url = '/longpoll/%d/%s' % (randnum, page_name)
-        page = html_boiler % (style, data, longpoll_url)
+        page = html_live_boiler % (style, data, longpoll_url)
         return page
 
 class Index:
@@ -211,7 +263,15 @@ class Index:
         data = index_data()
         style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
         longpoll_url = '/longpoll-index/%d' % randnum 
-        page = html_boiler % (style, data, longpoll_url)
+        page = html_live_boiler % (style, data, longpoll_url)
+        return page
+
+class CommitIndex:
+    def GET(self, commit):
+        randnum = random.randint(0, 2000000000)
+        data = commit_index_data(commit)
+        style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
+        page = html_boiler % (style, data)
         return page
 
 class Git:
@@ -225,7 +285,7 @@ class Git:
         randnum = random.randint(0, 2000000000)
         style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
         longpoll_url = '/longpoll-git/%d' % randnum 
-        page = html_boiler % (style, git_data(), longpoll_url)
+        page = html_live_boiler % (style, git_data(), longpoll_url)
         return page
 
 if __name__ == '__main__':
