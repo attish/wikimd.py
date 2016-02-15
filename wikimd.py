@@ -42,7 +42,8 @@ html_boiler = """
     </head>
     <body>
         <input name="stop" type="button" value="Stop" onclick="stop()"></input>
-        <a href="/">Index</a>
+        <a href="/">Index</a>&nbsp;|&nbsp;
+        <a href="/git">Git</a>
         <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
         <div class="container">
         <div id="content">%s</div>
@@ -107,9 +108,28 @@ def index_data():
 
 def git_data():
     is_git = not os.system('git rev-parse')
-    commit_list = '<br>'.join(run_command("git log --oneline".split()))
-    git_content = no_git if (not is_git) else commit_list
-    return "<h1>Git</h1>" + commit_list
+
+    cmd_iter = run_command("git log --oneline".split())
+    commit_table = '<table class="table">'
+    for commit_line in cmd_iter:
+        commit_hash = commit_line[0:6]
+        commit_title = commit_line[7:]
+        commit_table += '<tr><td class="col-sm-2">'
+        commit_table += '<a href="/commit/' + commit_hash + '">'
+        commit_table += commit_hash
+        commit_table += '</a>'
+        commit_table += '</td><td>'
+        commit_table += '<a href="/commit/' + commit_hash + '">'
+        commit_table += commit_title
+        commit_table += '</a>'
+        commit_table += '</td></tr>'
+    commit_table += '</table>'
+
+#        commits.append((commit_line [0:5], commit_line[7:]))
+
+    #commit_list = '<br>'.join(run_command("git log --oneline".split()))
+    git_content = no_git if (not is_git) else commit_table
+    return "<h1>Git</h1>" + git_content
 
 def get_dir():
 # From http://timgolden.me.uk/python/win32_how_do_i/watch_directory_for_changes.html
