@@ -20,6 +20,7 @@ urls = (
     '/longpoll/([0-9]+)/(.*)', 'LongPoll',
     '/longpoll-index/([0-9]+)', 'LongPollIndex',
     '/git', 'Git',
+    '/git-wiki/([0-9a-f]+)/(.*)', 'GitFrame',
     '/commit/([0-9a-f]+)', 'CommitIndex',
     '/longpoll-git/([0-9]+)', 'LongPollGit',
     '/stop', 'Stop',
@@ -121,12 +122,18 @@ def run_command(command):
                          stderr=subprocess.STDOUT)
     return iter(p.stdout.readline, b'')
 
-def file_mtime(fname):
-    return datetime.datetime.fromtimestamp(os.path.getmtime(fname))
+def file_mtime(file_name):
+    return datetime.datetime.fromtimestamp(os.path.getmtime(file_name))
 
-def file_data(fname):
-    with codecs.open(fname, encoding="utf-8") as f:
+def file_data(file_name):
+    with codecs.open(file_name, encoding="utf-8") as f:
         data = f.read()
+    return markdown.markdown(data, tab_length=2)
+
+def git_file_data(commit, file_name):
+    git_command = ("git show " + commit + ":" + file_name).split()
+    file_lines = run_command(git_command)
+    data = ''.join(file_lines)
     return markdown.markdown(data, tab_length=2)
 
 def title_line(file_name):
@@ -255,6 +262,14 @@ class Frame:
         style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
         longpoll_url = '/longpoll/%d/%s' % (randnum, page_name)
         page = html_live_boiler % (style, data, longpoll_url)
+        return page
+
+class GitFrame:
+    def GET(self, commit, page_name):
+        randnum = random.randint(0, 2000000000)
+        data = git_file_data(commit, page_name)
+        style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
+        page = html_boiler % (style, data)
         return page
 
 class Index:
