@@ -13,6 +13,7 @@ import markdown
 import codecs
 
 count = 0
+long_polls = {}
 
 urls = (
     '/wiki/(.*)', 'Frame',
@@ -23,6 +24,7 @@ urls = (
     '/git-wiki/([0-9a-f]+)/(.*)', 'GitFrame',
     '/commit/([0-9a-f]+)', 'CommitIndex',
     '/longpoll-git/([0-9]+)', 'LongPollGit',
+    '/longpoll-count', 'CountLongPoll',
     '/stop', 'Stop',
     '/jquery.js', 'jQuery'
     )
@@ -114,6 +116,21 @@ html_live_boiler = """
 </html>
 """
 
+def clean_long_polls():
+    # This cleans up long_poll entries that have not been removed when the
+    # long poll finished for some reason (ie. crashed).
+    now = datetime.datetime.now()
+    sessions = long_polls.keys()
+    for session in sessions:
+        if (now - long_polls[session]).total_seconds() > 60:
+            del long_polls[session]
+
+def register_long_poll(session_id):
+    clean_long_polls()
+    long_polls[session_id] = datetime.datetime.now()
+
+def unregister_long_poll(session_id):
+    del long_polls[session_id]
 
 def run_command(command):
 # By Max Persson. http://stackoverflow.com/a/13135985
@@ -198,6 +215,8 @@ def get_dir():
 class LongPoll:
     def GET(self, session_id, page_name):
         global last_refresh
+        clean_long_polls()
+        register_long_poll(session_id)
         webpy.header('Content-type', 'text/html')
         last_seen = file_mtime(page_name)
         counter = 0
@@ -205,14 +224,18 @@ class LongPoll:
             counter += 1
             if counter >= 10:
                 print "stop %s long poll." % page_name
+                unregister_long_poll(session_id)
                 return ""
             print "%s poll" % page_name
             time.sleep(1)
+        unregister_long_poll(session_id)
         return file_data(page_name)
 
 class LongPollIndex:
     def GET(self, session_id):
         global last_refresh
+        clean_long_polls()
+        register_long_poll(session_id)
         path = os.getcwd()
         webpy.header('Content-type', 'text/html')
         last_dir = get_dir()
@@ -221,9 +244,11 @@ class LongPollIndex:
             counter += 1
             if counter >= 10:
                 print "stop index long poll."
+                unregister_long_poll(session_id)
                 return ""
             print "index poll"
             time.sleep(1)
+        unregister_long_poll(session_id)
         return index_data()
 
 class LongPollGit:
@@ -231,6 +256,8 @@ class LongPollGit:
         def get_head():
             return "".join(run_command("git show-ref -s".split())).strip()
 
+        clean_long_polls()
+        register_long_poll(session_id)
         counter = 0
         webpy.header('Content-type', 'text/html')
         last_git = get_head()
@@ -241,10 +268,12 @@ class LongPollGit:
             counter += 1
             if counter >= 10:
                 print "stop git long poll."
+                unregister_long_poll(session_id)
                 return ""
             print "git head poll... " + get_head()
             time.sleep(1)
         print "************** new commit: " + get_head()
+        unregister_long_poll(session_id)
         return git_data()
 
 class Stop:
@@ -302,6 +331,10 @@ class Git:
         longpoll_url = '/longpoll-git/%d' % randnum 
         page = html_live_boiler % (style, git_data(), longpoll_url)
         return page
+
+class CountLongPoll:
+    def GET(self):
+        return len(long_polls)
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
