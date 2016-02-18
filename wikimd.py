@@ -13,6 +13,8 @@ import markdown
 import codecs
 
 count = 0
+dir = os.path.dirname(os.path.realpath(__file__))
+style = open(dir + "/bootstrap-readable.css").read()
 
 urls = (
     '/wiki/(.*)', 'Frame',
@@ -252,7 +254,7 @@ class Frame:
     def GET(self, page_name):
         randnum = random.randint(0, 2000000000)
         data = file_data(page_name)
-        style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
+        #style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
         longpoll_url = '/longpoll/%d/%s' % (randnum, page_name)
         page = html_live_boiler % (style, data, longpoll_url)
         return page
@@ -261,7 +263,7 @@ class Index:
     def GET(self):
         randnum = random.randint(0, 2000000000)
         data = index_data()
-        style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
+        #style = open("/wikimd.py/bootstrap-readable.css").read()
         longpoll_url = '/longpoll-index/%d' % randnum 
         page = html_live_boiler % (style, data, longpoll_url)
         return page
@@ -270,7 +272,7 @@ class CommitIndex:
     def GET(self, commit):
         randnum = random.randint(0, 2000000000)
         data = commit_index_data(commit)
-        style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
+        #style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
         page = html_boiler % (style, data)
         return page
 
@@ -283,7 +285,7 @@ class Git:
   Directory is not a  git repository!
 </div>"""
         randnum = random.randint(0, 2000000000)
-        style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
+        #style = open("/home/attis/watchmd.py/bootstrap-readable.css").read()
         longpoll_url = '/longpoll-git/%d' % randnum 
         page = html_live_boiler % (style, git_data(), longpoll_url)
         return page
