@@ -203,9 +203,10 @@ def git_data():
         commit_table += '</td></tr>'
     commit_table += '</table>'
 
-#        commits.append((commit_line [0:5], commit_line[7:]))
-
-    #commit_list = '<br>'.join(run_command("git log --oneline".split()))
+    no_git = """
+<div class="alert alert-danger" role="alert">
+  <span class="sr-only">Error:</span>Directory is not a  git repository!
+</div>"""
     git_content = no_git if (not is_git) else commit_table
     return "<h1>Git</h1>" + git_content
 
@@ -318,12 +319,6 @@ class CommitIndex:
 
 class Git:
     def GET(self):
-        no_git = """
-<div class="alert alert-danger" role="alert">
-  <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-  <span class="sr-only">Error:</span>
-  Directory is not a  git repository!
-</div>"""
         randnum = random.randint(0, 2000000000)
         longpoll_url = '/longpoll-git/%d' % randnum 
         page = html_live_boiler % (style, git_data(), longpoll_url)
