@@ -143,6 +143,9 @@ def register_long_poll(session_id):
 def unregister_long_poll(session_id):
     del long_polls[session_id]
 
+def is_git():
+    return not os.system('git rev-parse')
+
 def run_command(command):
 # By Max Persson. http://stackoverflow.com/a/13135985
     p = subprocess.Popen(command,
@@ -186,7 +189,20 @@ def index_data():
     link_boiler = "<tr><td><a href='wiki/%s'>%s</a></td></tr>"
     index_boiler = "<h1>Index</h1><table class=\"table\">%s</table>"
     pwd = os.getcwd()
-    files = [(f, title_line(f)) for f in os.listdir(pwd) if f.endswith(".md")]
+    git_status = {}
+    if is_git():
+        git_cmd_dirty = "git diff --name-only".split()
+        git_cmd_staged = "git diff --name-only --staged".split()
+        git_cmd_notrack = "git ls-files -o --exclude-standard".split()
+        try:
+            dirty = subprocess.check_output(git_cmd_dirty).splitlines()
+            staged = subprocess.check_output(git_cmd_staged).splitlines()
+            notrack = subprocess.check_output(git_cmd_notrack).splitlines()
+            for f in dirty: git_status[f] = "d"
+            for f in staged: git_status[f] = "s"
+            for f in notrack: git_status[f] = "n"
+        except Exception as e: print e
+    files = [(f, git_status.get(f, "&nbsp;") + "&nbsp;-&nbsp;" + title_line(f)) for f in os.listdir(pwd) if f.endswith(".md")]
     links = [link_boiler % (f[0], f[1]) for f in files]
     return index_boiler % '\n'.join(links)
 
@@ -206,8 +222,6 @@ def commit_index_data(commit):
     return index_boiler % (commit, '\n'.join(links))
 
 def git_data():
-    is_git = not os.system('git rev-parse')
-
     cmd_iter = run_command("git log --oneline".split())
     commit_table = '<table class="table">'
     for commit_line in cmd_iter:
@@ -225,13 +239,14 @@ def git_data():
     commit_table += '</table>'
 
     no_git = error_boiler % "Directory is not a git repository!"
-    git_content = no_git if (not is_git) else commit_table
+    git_content = no_git if (not is_git()) else commit_table
     return "<h1>Git</h1>" + git_content
 
 def get_dir():
-# From http://timgolden.me.uk/python/win32_how_do_i/watch_directory_for_changes.html
-    return dict([(f, None) for f in os.listdir(os.getcwd())])
-
+    # From http://timgolden.me.uk/python/win32_how_do_i/watch_directory_for_changes.html
+    #return dict([(f, None) for f in os.listdir(os.getcwd())])
+    r = subprocess.check_output("ls -la --time-style=+%s", shell=True)
+    return r
 
 class LongPoll:
     def GET(self, session_id, page_name):
