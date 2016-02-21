@@ -23,8 +23,8 @@ urls = (
     '/longpoll/([0-9]+)/(.*)', 'LongPoll',
     '/longpoll-index/([0-9]+)', 'LongPollIndex',
     '/git', 'Git',
-    '/git-wiki/([0-9a-f]+)/(.*)', 'GitFrame',
-    '/commit/([0-9a-f]+)', 'CommitIndex',
+    '/git/([0-9a-f]+)', 'CommitIndex',
+    '/git/([0-9a-f]+)/(.+)', 'GitFrame',
     '/longpoll-git/([0-9]+)', 'LongPollGit',
     '/longpoll-count', 'CountLongPoll',
     '/stop', 'Stop',
@@ -191,7 +191,7 @@ def index_data():
     return index_boiler % '\n'.join(links)
 
 def commit_index_data(commit):
-    link_boiler = "<tr><td><a href='/git-wiki/%s/%s'>%s</a></td></tr>"
+    link_boiler = "<tr><td><a href='/git/%s/%s'>%s</a></td></tr>"
     index_boiler = "<h1>Index at %s</h1><table class=\"table\">%s</table>"
     pwd = os.getcwd()
     git_command = ("git ls-tree --name-only -r " + commit).split()
@@ -214,11 +214,11 @@ def git_data():
         commit_hash = commit_line[0:6]
         commit_title = commit_line[7:]
         commit_table += '<tr><td class="col-sm-2">'
-        commit_table += '<a href="/commit/' + commit_hash + '">'
+        commit_table += '<a href="/git/' + commit_hash + '">'
         commit_table += commit_hash
         commit_table += '</a>'
         commit_table += '</td><td>'
-        commit_table += '<a href="/commit/' + commit_hash + '">'
+        commit_table += '<a href="/git/' + commit_hash + '">'
         commit_table += commit_title
         commit_table += '</a>'
         commit_table += '</td></tr>'
