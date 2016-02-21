@@ -118,6 +118,15 @@ html_live_boiler = """
 </html>
 """
 
+error_boiler = """
+<div class="alert alert-danger" role="alert">
+  <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true">
+  </span>
+  <span class="sr-only">Error:</span>
+  %s
+</div>
+"""
+
 def clean_long_polls():
     # This cleans up long_poll entries that have not been removed when the
     # long poll finished for some reason (ie. crashed).
@@ -141,6 +150,14 @@ def run_command(command):
                          stderr=subprocess.STDOUT)
     return iter(p.stdout.readline, b'')
 
+def run_command_blocking(command):
+    try:
+        p = subprocess.check_output(command,
+                                    stderr=subprocess.STDOUT)
+        return p, 0
+    except subprocess.CalledProcessError as err:
+        return err.output, err.returncode
+
 def file_mtime(file_name):
     return datetime.datetime.fromtimestamp(os.path.getmtime(file_name))
 
@@ -151,9 +168,10 @@ def file_data(file_name):
 
 def git_file_data(commit, file_name):
     git_command = ("git show " + commit + ":" + file_name).split()
-    file_lines = run_command(git_command)
-    data = ''.join(file_lines)
-    return markdown.markdown(data, tab_length=2)
+    output, git_error = run_command_blocking(git_command)
+    return ("<h1>Git error</h1>" + error_boiler % output
+               if git_error
+               else markdown.markdown(output, tab_length=2))
 
 def title_line(file_name):
     with open(file_name, 'r') as f:
@@ -177,7 +195,10 @@ def commit_index_data(commit):
     index_boiler = "<h1>Index at %s</h1><table class=\"table\">%s</table>"
     pwd = os.getcwd()
     git_command = ("git ls-tree --name-only -r " + commit).split()
-    commit_files = run_command(git_command)
+    output, git_error = run_command_blocking(git_command)
+    if git_error:
+        return "<h1>Git error</h1>" + error_boiler % output
+    commit_files = iter(output.splitlines())
     files = [(f, git_title_line(commit, f))
                 for f in commit_files
                 if f.strip().endswith(".md")]
@@ -203,10 +224,7 @@ def git_data():
         commit_table += '</td></tr>'
     commit_table += '</table>'
 
-    no_git = """
-<div class="alert alert-danger" role="alert">
-  <span class="sr-only">Error:</span>Directory is not a  git repository!
-</div>"""
+    no_git = error_boiler % "Directory is not a git repository!"
     git_content = no_git if (not is_git) else commit_table
     return "<h1>Git</h1>" + git_content
 
