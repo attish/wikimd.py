@@ -186,11 +186,18 @@ def git_title_line(commit, file_name):
     return file_lines.next()
 
 def index_data():
-    link_boiler = "<tr><td><a href='wiki/%s'>%s</a></td></tr>"
+    def status_icon(fn):
+        if git_status.get(fn) == "d": return "glyphicon glyphicon-exclamation-sign" 
+        if git_status.get(fn) == "s": return "glyphicon glyphicon-time" 
+        if git_status.get(fn) == "n": return "glyphicon glyphicon-question-sign" 
+        return "glyphicon glyphicon-ok-sign" 
+
+    link_boiler = "<tr><td><span class='%s'></span></td><td><a href='wiki/%s'>%s</a></td></tr>"
     index_boiler = "<h1>Index</h1><table class=\"table\">%s</table>"
     pwd = os.getcwd()
+    git = is_git()
     git_status = {}
-    if is_git():
+    if git:
         git_cmd_dirty = "git diff --name-only".split()
         git_cmd_staged = "git diff --name-only --staged".split()
         git_cmd_notrack = "git ls-files -o --exclude-standard".split()
@@ -202,8 +209,8 @@ def index_data():
             for f in staged: git_status[f] = "s"
             for f in notrack: git_status[f] = "n"
         except Exception as e: print e
-    files = [(f, git_status.get(f, "&nbsp;") + "&nbsp;-&nbsp;" + title_line(f)) for f in os.listdir(pwd) if f.endswith(".md")]
-    links = [link_boiler % (f[0], f[1]) for f in files]
+    files = [(f, title_line(f), status_icon(f) if git else "") for f in os.listdir(pwd) if f.endswith(".md")]
+    links = [link_boiler % (f[2], f[0], f[1]) for f in files]
     return index_boiler % '\n'.join(links)
 
 def commit_index_data(commit):
