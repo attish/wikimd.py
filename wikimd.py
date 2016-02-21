@@ -174,7 +174,7 @@ def git_file_data(commit, file_name):
     output, git_error = run_command_blocking(git_command)
     return ("<h1>Git error</h1>" + error_boiler % output
                if git_error
-               else markdown.markdown(output, tab_length=2))
+               else markdown.markdown(output.decode("utf-8"), tab_length=2))
 
 def title_line(file_name):
     with open(file_name, 'r') as f:
@@ -183,7 +183,7 @@ def title_line(file_name):
 def git_title_line(commit, file_name):
     git_command = ("git show " + commit + ":" + file_name).split()
     file_lines = run_command(git_command)
-    return file_lines.next()
+    return file_lines.next().decode("utf-8")
 
 def index_data():
     def status_icon(fn):
@@ -225,6 +225,7 @@ def commit_index_data(commit):
     files = [(f, git_title_line(commit, f))
                 for f in commit_files
                 if f.strip().endswith(".md")]
+    print files
     links = [link_boiler % (commit, f[0], f[1]) for f in files]
     return index_boiler % (commit, '\n'.join(links))
 
