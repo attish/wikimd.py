@@ -31,11 +31,7 @@ urls = (
     '/jquery.js', 'jQuery'
     )
 
-# Outer static HTML boilerplate
-# Params:
-#   %s style
-#   %s content
-html_boiler = """
+html_boiler_head = """
 <html>
     <head>
         <title>WikiMD</title>
@@ -51,8 +47,12 @@ html_boiler = """
         <a href="/git">Git</a>
         <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
         <div class="container">
-        <div id="content">%s</div>
+            <div id="content">
+"""
+
+html_boiler_script = """
         </div>
+            </div>
     <script type="text/javascript">
         function stop() {
             $.ajax({url: '/stop'});
@@ -60,43 +60,17 @@ html_boiler = """
             $('#closed').show(400);
             $('#content').css('color', 'lightgrey');
         }
+"""
+
+html_boiler_tail = """
     </script>
     </body>
 </html>
 """
 
-# Outer live HTML boilerplate (with longpoll)
-# Params:
-#   %s style
-#   %s content
-#   %s longpoll_url
-html_live_boiler = """
-<html>
-    <head>
-        <title>WikiMD</title>
-        <meta charset="UTF-8">
-        <script type="text/javascript" src="/jquery.js"></script>
-<style>
-%s
-</style>
-    </head>
-    <body>
-        <input name="stop" type="button" value="Stop" onclick="stop()"></input>
-        <a href="/">Index</a>&nbsp;|&nbsp;
-        <a href="/git">Git</a>
-        <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
-        <div class="container">
-        <div id="content">%s</div>
-        </div>
-    <script type="text/javascript">
-        function stop() {
-            $.ajax({url: '/stop'});
-            $('#stop').hide();
-            $('#closed').show(400);
-            $('#content').css('color', 'lightgrey');
-        }
+html_boiler = html_boiler_head + "%s" + html_boiler_script + html_boiler_tail
 
-
+html_live_script = """
         function getContent() {
             $.ajax({
                 url: '%s',
@@ -113,10 +87,9 @@ html_live_boiler = """
             });
         }
         getContent();
-    </script>
-    </body>
-</html>
 """
+
+html_live_boiler = html_boiler_head + "%s" + html_boiler_script + html_live_script +  html_boiler_tail
 
 error_boiler = """
 <div class="alert alert-danger" role="alert">
@@ -127,17 +100,14 @@ error_boiler = """
 </div>
 """
 
-def clean_long_polls():
+def register_long_poll(session_id):
     # This cleans up long_poll entries that have not been removed when the
-    # long poll finished for some reason (ie. crashed).
+    # long poll finished for some reason (ie. crashed), then adds new.
     now = datetime.datetime.now()
     sessions = long_polls.keys()
     for session in sessions:
         if (now - long_polls[session]).total_seconds() > 60:
             del long_polls[session]
-
-def register_long_poll(session_id):
-    clean_long_polls()
     long_polls[session_id] = datetime.datetime.now()
 
 def unregister_long_poll(session_id):
@@ -259,7 +229,6 @@ def get_dir():
 class LongPoll:
     def GET(self, session_id, page_name):
         global last_refresh
-        clean_long_polls()
         register_long_poll(session_id)
         webpy.header('Content-type', 'text/html')
         last_seen = file_mtime(page_name)
@@ -278,7 +247,6 @@ class LongPoll:
 class LongPollIndex:
     def GET(self, session_id):
         global last_refresh
-        clean_long_polls()
         register_long_poll(session_id)
         path = os.getcwd()
         webpy.header('Content-type', 'text/html')
@@ -300,7 +268,6 @@ class LongPollGit:
         def get_head():
             return "".join(run_command("git show-ref -s".split())).strip()
 
-        clean_long_polls()
         register_long_poll(session_id)
         counter = 0
         webpy.header('Content-type', 'text/html')
@@ -338,7 +305,6 @@ class Frame:
 
 class GitFrame:
     def GET(self, commit, page_name):
-        randnum = random.randint(0, 2000000000)
         data = git_file_data(commit, page_name)
         page = html_boiler % (style, data)
         return page
