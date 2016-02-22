@@ -18,8 +18,10 @@ dir = os.path.dirname(os.path.realpath(__file__))
 style = open(dir + "/bootstrap-readable.css").read()
 
 urls = (
-    '/wiki/(.*)', 'Frame',
     '/', 'Index',
+    '/wiki/(.*)', 'Frame',
+    '/edit/(.*)', 'Edit',
+    '/save/(.*)', 'Save',
     '/longpoll/([0-9]+)/(.*)', 'LongPoll',
     '/longpoll-index/([0-9]+)', 'LongPollIndex',
     '/git', 'Git',
@@ -84,12 +86,6 @@ live_script = """
         getContent();
 """
 
-edit_boiler = """
-<textarea name="paste_code" rows="30" id="edit_text" style="overflow: hidden; word-wrap: break-word; resize: horizontal;"></textarea>
-  %s
-</textarea>
-"""
-
 html_static_boiler = html_boiler_common % {
             "style": "%(style)s", 
             "toplinks": "", 
@@ -110,6 +106,13 @@ html_editable_live_boiler = html_boiler_common % {
             "content": "%(content)s", 
             "scripts": live_script, 
         }
+
+edit_boiler = """
+    <h1>Edit %(page_name)s</h1>
+    <form action="/save/%(page_name)s" method="post">
+        <p><textarea name="edit_text" rows="30" id="edit_text" style="width: 100%%; overflow: hidden; word-wrap: break-word; resize: horizontal;">%(text)s</textarea></p>
+        <input type="submit" value="Save">
+"""
 
 error_boiler = """
 <div class="alert alert-danger" role="alert">
@@ -364,6 +367,22 @@ class Git:
                 "longpoll_url": longpoll_url,
             }
         return page
+
+class Edit:
+    def GET(self, page_name):
+        content = edit_boiler % {
+                "page_name": page_name,
+                "text": raw_file_data(page_name),
+            }
+        page = html_static_boiler % {"style": style, "content": content}
+        return page
+
+class Save:
+    def POST(self, page_name):
+        post_data = webpy.input()
+        with open(page_name, "w") as page_file:
+            page_file.write(post_data.edit_text)
+        raise webpy.seeother('/wiki/%s' % page_name)
 
 class CountLongPoll:
     def GET(self):
