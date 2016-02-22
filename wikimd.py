@@ -31,28 +31,26 @@ urls = (
     '/jquery.js', 'jQuery'
     )
 
-html_boiler_head = """
+html_boiler_common = """
 <html>
     <head>
         <title>WikiMD</title>
         <meta charset="UTF-8">
         <script type="text/javascript" src="/jquery.js"></script>
 <style>
-%s
+%(style)s
 </style>
     </head>
     <body>
         <input name="stop" type="button" value="Stop" onclick="stop()"></input>
-        <a href="/">Index</a>&nbsp;|&nbsp;
-        <a href="/git">Git</a>
+        <a href="/">Index</a>&nbsp;|&nbsp;<a href="/git">Git</a>
+        %(toplinks)s
         <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
         <div class="container">
             <div id="content">
-"""
-
-html_boiler_script = """
-        </div>
+                %(content)s
             </div>
+        </div>
     <script type="text/javascript">
         function stop() {
             $.ajax({url: '/stop'});
@@ -60,20 +58,17 @@ html_boiler_script = """
             $('#closed').show(400);
             $('#content').css('color', 'lightgrey');
         }
-"""
 
-html_boiler_tail = """
+        %(scripts)s
     </script>
     </body>
 </html>
 """
 
-html_boiler = html_boiler_head + "%s" + html_boiler_script + html_boiler_tail
-
-html_live_script = """
+live_script = """
         function getContent() {
             $.ajax({
-                url: '%s',
+                url: '%(longpoll_url)s',
                 dataType: 'text',
                 type: 'get',
                 success: function(doc){
@@ -89,7 +84,32 @@ html_live_script = """
         getContent();
 """
 
-html_live_boiler = html_boiler_head + "%s" + html_boiler_script + html_live_script +  html_boiler_tail
+edit_boiler = """
+<textarea name="paste_code" rows="30" id="edit_text" style="overflow: hidden; word-wrap: break-word; resize: horizontal;"></textarea>
+  %s
+</textarea>
+"""
+
+html_static_boiler = html_boiler_common % {
+            "style": "%(style)s", 
+            "toplinks": "", 
+            "content": "%(content)s", 
+            "scripts": "",
+        }
+
+html_live_boiler = html_boiler_common % {
+            "style": "%(style)s", 
+            "toplinks": "", 
+            "content": "%(content)s", 
+            "scripts": live_script, 
+        }
+
+html_editable_live_boiler = html_boiler_common % {
+            "style": "%(style)s", 
+            "toplinks": '|&nbsp;<a href="/edit/%(page_name)s">Edit</a>', 
+            "content": "%(content)s", 
+            "scripts": live_script, 
+        }
 
 error_boiler = """
 <div class="alert alert-danger" role="alert">
@@ -134,10 +154,12 @@ def run_command_blocking(command):
 def file_mtime(file_name):
     return datetime.datetime.fromtimestamp(os.path.getmtime(file_name))
 
-def file_data(file_name):
+def raw_file_data(file_name):
     with codecs.open(file_name, encoding="utf-8") as f:
-        data = f.read()
-    return markdown.markdown(data, tab_length=2)
+        return f.read()
+
+def file_data(file_name):
+    return markdown.markdown(raw_file_data(file_name), tab_length=2)
 
 def git_file_data(commit, file_name):
     git_command = ("git show " + commit + ":" + file_name).split()
@@ -298,37 +320,49 @@ class jQuery:
 class Frame:
     def GET(self, page_name):
         randnum = random.randint(0, 2000000000)
+        print page_name
         data = file_data(page_name)
         longpoll_url = '/longpoll/%d/%s' % (randnum, page_name)
-        page = html_live_boiler % (style, data, longpoll_url)
+        page = html_editable_live_boiler % {
+                "style": style,
+                "content": data,
+                "longpoll_url": longpoll_url,
+                "page_name": page_name,
+            }
         return page
 
 class GitFrame:
     def GET(self, commit, page_name):
         data = git_file_data(commit, page_name)
-        page = html_boiler % (style, data)
+        page = html_static_boiler % {"style": style, "content": data}
         return page
 
 class Index:
     def GET(self):
         randnum = random.randint(0, 2000000000)
-        data = index_data()
         longpoll_url = '/longpoll-index/%d' % randnum 
-        page = html_live_boiler % (style, data, longpoll_url)
+        page = html_live_boiler % {
+                "style": style,
+                "content": index_data(),
+                "longpoll_url": longpoll_url,
+            }
         return page
 
 class CommitIndex:
     def GET(self, commit):
-        randnum = random.randint(0, 2000000000)
         data = commit_index_data(commit)
-        page = html_boiler % (style, data)
+        page = html_static_boiler % {"style": style, "content": data}
         return page
 
 class Git:
     def GET(self):
         randnum = random.randint(0, 2000000000)
         longpoll_url = '/longpoll-git/%d' % randnum 
-        page = html_live_boiler % (style, git_data(), longpoll_url)
+        page = html_live_boiler % {
+                "style": style,
+                "content": git_data(),
+                "longpoll_url": longpoll_url,
+            }
         return page
 
 class CountLongPoll:
