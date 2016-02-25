@@ -172,8 +172,11 @@ def git_file_data(commit, file_name):
                else markdown.markdown(output.decode("utf-8"), tab_length=2))
 
 def title_line(file_name):
-    with open(file_name, 'r') as f:
-        return f.readline()
+    try:
+        with open(file_name, 'r') as f:
+            return f.readline()
+    except:
+        return file_name
 
 def git_title_line(commit, file_name):
     git_command = ("git show " + commit + ":" + file_name).split()
@@ -185,7 +188,16 @@ def index_data():
         if git_status.get(fn) == "d": return "glyphicon glyphicon-exclamation-sign" 
         if git_status.get(fn) == "s": return "glyphicon glyphicon-time" 
         if git_status.get(fn) == "n": return "glyphicon glyphicon-question-sign" 
+        if git_status.get(fn) == "r": return "glyphicon glyphicon-trash" 
         return "glyphicon glyphicon-ok-sign" 
+
+    def make_link(fn, deleted):
+        link = "<tr><td><span class='%s'></span></td><td>" % status_icon(fn)
+        if not deleted:
+            link += "<a href='wiki/%s'>%s</a></td></tr>" % (fn, title_line(fn))
+        else:
+            link += '<span style="color:lightgrey">%s</span>' % fn
+        return link
 
     link_boiler = "<tr><td><span class='%s'></span></td><td><a href='wiki/%s'>%s</a></td></tr>"
     index_boiler = "<h1>Index</h1><table class=\"table\">%s</table>"
@@ -196,16 +208,19 @@ def index_data():
         git_cmd_dirty = "git diff --name-only".split()
         git_cmd_staged = "git diff --name-only --staged".split()
         git_cmd_notrack = "git ls-files -o --exclude-standard".split()
+        git_cmd_removed = "git ls-files -d".split()
         try:
             dirty = subprocess.check_output(git_cmd_dirty).splitlines()
             staged = subprocess.check_output(git_cmd_staged).splitlines()
             notrack = subprocess.check_output(git_cmd_notrack).splitlines()
+            removed = subprocess.check_output(git_cmd_removed).splitlines()
             for f in dirty: git_status[f] = "d"
             for f in staged: git_status[f] = "s"
             for f in notrack: git_status[f] = "n"
+            for f in removed: git_status[f] = "r"
         except Exception as e: print e
-    files = [(f, title_line(f), status_icon(f) if git else "") for f in os.listdir(pwd) if f.endswith(".md")]
-    links = [link_boiler % (f[2], f[0], f[1]) for f in files]
+    filelist = subprocess.check_output("git ls-files".split()).splitlines()
+    links = [make_link(f, f in removed) for f in filelist if f.endswith(".md")]
     return index_boiler % '\n'.join(links)
 
 def commit_index_data(commit):
