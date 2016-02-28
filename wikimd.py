@@ -174,7 +174,8 @@ def git_file_data(commit, file_name):
 def title_line(file_name):
     try:
         with open(file_name, 'r') as f:
-            return f.readline()
+            title_line = f.readline().strip()
+            return title_line if title_line else file_name
     except:
         return file_name
 
@@ -189,7 +190,8 @@ def index_data():
         if git_status.get(fn) == "s": return "glyphicon glyphicon-time" 
         if git_status.get(fn) == "n": return "glyphicon glyphicon-question-sign" 
         if git_status.get(fn) == "r": return "glyphicon glyphicon-trash" 
-        return "glyphicon glyphicon-ok-sign" 
+        if git_status.get(fn) == "c": return "glyphicon glyphicon-ok-sign" 
+        return ""
 
     def make_link(fn, deleted):
         link = "<tr><td><span class='%s'></span></td><td>" % status_icon(fn)
@@ -204,23 +206,31 @@ def index_data():
     pwd = os.getcwd()
     git = is_git()
     git_status = {}
+    links = []
     if git:
+        git_cmd_all = "git ls-files".split()
         git_cmd_dirty = "git diff --name-only".split()
         git_cmd_staged = "git diff --name-only --staged".split()
         git_cmd_notrack = "git ls-files -o --exclude-standard".split()
         git_cmd_removed = "git ls-files -d".split()
         try:
+            git_all = subprocess.check_output(git_cmd_all).splitlines()
             dirty = subprocess.check_output(git_cmd_dirty).splitlines()
             staged = subprocess.check_output(git_cmd_staged).splitlines()
+            clean = [f for f in git_all if f not in (dirty + staged)]
             notrack = subprocess.check_output(git_cmd_notrack).splitlines()
             removed = subprocess.check_output(git_cmd_removed).splitlines()
+            for f in clean: git_status[f] = "c"
             for f in dirty: git_status[f] = "d"
             for f in staged: git_status[f] = "s"
             for f in notrack: git_status[f] = "n"
             for f in removed: git_status[f] = "r"
+            filelist = git_status.keys()
+            links = [make_link(f, f in removed) for f in filelist if f.endswith(".md")]
         except Exception as e: print e
-    filelist = subprocess.check_output("git ls-files".split()).splitlines()
-    links = [make_link(f, f in removed) for f in filelist if f.endswith(".md")]
+    else:
+        filelist = os.listdir(pwd)
+        links = [make_link(f, False) for f in filelist if f.endswith(".md")]
     return index_boiler % '\n'.join(links)
 
 def commit_index_data(commit):
