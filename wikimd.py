@@ -21,7 +21,9 @@ urls = (
     '/', 'Index',
     '/wiki/(.*)', 'Frame',
     '/edit/(.*)', 'Edit',
+    '/new', 'New',
     '/save/(.*)', 'Save',
+    '/save-new', 'SaveNew',
     '/longpoll/([0-9]+)/(.*)', 'LongPoll',
     '/longpoll-index/([0-9]+)', 'LongPollIndex',
     '/git', 'Git',
@@ -45,7 +47,7 @@ html_boiler_common = """
     </head>
     <body>
         <input name="stop" type="button" value="Stop" onclick="stop()"></input>
-        <a href="/">Index</a>&nbsp;|&nbsp;<a href="/git">Git</a>
+        <a href="/">Index</a>&nbsp;|&nbsp;<a href="/git">Git</a>&nbsp;|&nbsp;<a href="/new">New</a>
         %(toplinks)s
         <div id="closed" style="width: 30em; background-color: aliceblue; border: 1px solid lightblue; margin: 3em auto; padding: 1em; color: blue; text-align: center; display: none">The server is stopped. You may close the window.</div>
         <div class="container">
@@ -111,7 +113,17 @@ edit_boiler = """
     <h1>Edit %(page_name)s</h1>
     <form action="/save/%(page_name)s" method="post">
         <p><textarea name="edit_text" rows="30" id="edit_text" style="width: 100%%; overflow: hidden; word-wrap: break-word; resize: horizontal;">%(text)s</textarea></p>
-        <input type="submit" value="Save">
+        <input type="submit" value="Save"></form>
+"""
+
+new_boiler = """
+    <h1>New page</h1>
+    <form action="/save-new" method="post">
+        <p>
+            <input name="file_name" type="text" class="form-control" placeholder="Filename"></input>
+            <textarea name="edit_text" class="form-control" rows="30" id="edit_text" style="width: 100%%; overflow: hidden; word-wrap: break-word; resize: horizontal;"></textarea>
+        </p>
+        <input type="submit" value="Save"></form>
 """
 
 error_boiler = """
@@ -402,9 +414,24 @@ class Edit:
         page = html_static_boiler % {"style": style, "content": content}
         return page
 
+class New:
+    def GET(self):
+        content = new_boiler
+        page = html_static_boiler % {"style": style, "content": content}
+        return page
+
 class Save:
     def POST(self, page_name):
         post_data = webpy.input()
+        with open(page_name, "w") as page_file:
+            page_file.write(post_data.edit_text)
+        raise webpy.seeother('/wiki/%s' % page_name)
+
+class SaveNew:
+    def POST(self):
+        post_data = webpy.input()
+        page_name = post_data.file_name.strip() + ".md"
+        print "creating new file %s" % page_name
         with open(page_name, "w") as page_file:
             page_file.write(post_data.edit_text)
         raise webpy.seeother('/wiki/%s' % page_name)
