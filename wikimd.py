@@ -176,14 +176,20 @@ def run_command_blocking(command):
         return err.output, err.returncode
 
 def file_mtime(file_name):
-    return datetime.datetime.fromtimestamp(os.path.getmtime(file_name))
+    try:
+        return datetime.datetime.fromtimestamp(os.path.getmtime(file_name))
+    except:
+        return None
 
 def raw_file_data(file_name):
     with codecs.open(file_name, encoding="utf-8") as f:
         return f.read()
 
 def file_data(file_name):
-    return markdown.markdown(raw_file_data(file_name), tab_length=2)
+    try:
+        return markdown.markdown(raw_file_data(file_name), tab_length=2)
+    except:
+        return error_boiler % "File is no longer available."
 
 def git_file_data(commit, file_name):
     git_command = ("git show " + commit + ":" + file_name).split()
