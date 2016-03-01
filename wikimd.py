@@ -24,6 +24,7 @@ urls = (
     '/new', 'New',
     '/save/(.*)', 'Save',
     '/save-new', 'SaveNew',
+    '/delete/(.*)', 'Delete',
     '/longpoll/([0-9]+)/(.*)', 'LongPoll',
     '/longpoll-index/([0-9]+)', 'LongPollIndex',
     '/git', 'Git',
@@ -104,7 +105,7 @@ html_live_boiler = html_boiler_common % {
 
 html_editable_live_boiler = html_boiler_common % {
             "style": "%(style)s", 
-            "toplinks": '|&nbsp;<a href="/edit/%(page_name)s">Edit</a>', 
+            "toplinks": '|&nbsp;<a href="/edit/%(page_name)s">Edit</a>&nbsp;|&nbsp;<a href="/delete/%(page_name)s">Delete</a>', 
             "content": "%(content)s", 
             "scripts": live_script, 
         }
@@ -124,6 +125,14 @@ new_boiler = """
             <textarea name="edit_text" class="form-control" rows="30" id="edit_text" style="width: 100%%; overflow: hidden; word-wrap: break-word; resize: horizontal;"></textarea>
         </p>
         <input type="submit" value="Save"></form>
+"""
+
+delete_boiler = """
+    <h1>Delete page</h1>
+    <form action="/delete/%s" method="post">
+        <div class="checkbox">
+            <label><input type="checkbox" name="confirm">Confirm delete</label></div>
+        <input type="submit" value="Delete"></form>
 """
 
 error_boiler = """
@@ -434,6 +443,20 @@ class SaveNew:
         print "creating new file %s" % page_name
         with open(page_name, "w") as page_file:
             page_file.write(post_data.edit_text)
+        raise webpy.seeother('/wiki/%s' % page_name)
+
+class Delete:
+    def GET(self, page_name):
+        content = delete_boiler % page_name
+        page = html_static_boiler % {"style": style, "content": content}
+        return page
+
+    def POST(self, page_name):
+        if webpy.input().get("confirm", "") == "on":
+            if page_name.endswith(".md"):
+                os.remove(page_name)
+            print "DELETED %s" % page_name
+            raise webpy.seeother('/')
         raise webpy.seeother('/wiki/%s' % page_name)
 
 class CountLongPoll:
