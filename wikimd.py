@@ -214,15 +214,18 @@ def git_title_line(commit, file_name):
 
 def index_data():
     def status_icon(fn):
-        if git_status.get(fn) == "d": return "glyphicon glyphicon-exclamation-sign" 
-        if git_status.get(fn) == "s": return "glyphicon glyphicon-time" 
-        if git_status.get(fn) == "n": return "glyphicon glyphicon-question-sign" 
-        if git_status.get(fn) == "r": return "glyphicon glyphicon-trash" 
-        if git_status.get(fn) == "c": return "glyphicon glyphicon-ok-sign" 
+        span = "<span class='%s'></span>"
+        span_add = "<a href='/add/%s'><span class='%s'></span></a>"
+        if git_status.get(fn) == "d": return span_add % \
+            (fn, "glyphicon glyphicon-exclamation-sign")
+        if git_status.get(fn) == "s": return span % "glyphicon glyphicon-time" 
+        if git_status.get(fn) == "n": return span % "glyphicon glyphicon-question-sign" 
+        if git_status.get(fn) == "r": return span % "glyphicon glyphicon-trash" 
+        if git_status.get(fn) == "c": return span % "glyphicon glyphicon-ok-sign" 
         return ""
 
     def make_link(fn, deleted):
-        link = "<tr><td><span class='%s'></span></td><td>" % status_icon(fn)
+        link = "<tr><td>%s</td><td>" % status_icon(fn)
         if not deleted:
             link += "<a href='wiki/%s'>%s</a></td></tr>" % (fn, title_line(fn))
         else:
