@@ -25,6 +25,7 @@ urls = (
     '/save/(.*)', 'Save',
     '/save-new', 'SaveNew',
     '/delete/(.*)', 'Delete',
+    '/add/(.*)', 'Add',
     '/longpoll/([0-9]+)/(.*)', 'LongPoll',
     '/longpoll-index/([0-9]+)', 'LongPollIndex',
     '/git', 'Git',
@@ -468,6 +469,13 @@ class Delete:
             print "DELETED %s" % page_name
             raise webpy.seeother('/')
         raise webpy.seeother('/wiki/%s' % page_name)
+
+class Add:
+    def GET(self, page_name):
+        git_command = ("git add " + page_name).split()
+        output, git_error = run_command_blocking(git_command)
+        if git_error: return "error"
+        raise webpy.seeother('/')
 
 class CountLongPoll:
     def GET(self):
