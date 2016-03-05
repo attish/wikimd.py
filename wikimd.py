@@ -440,7 +440,7 @@ class Save:
     def POST(self, page_name):
         post_data = webpy.input()
         with open(page_name, "w") as page_file:
-            page_file.write(post_data.edit_text)
+            page_file.write(post_data.edit_text.encode('utf-8'))
         raise webpy.seeother('/wiki/%s' % page_name)
 
 class SaveNew:
@@ -449,7 +449,7 @@ class SaveNew:
         page_name = post_data.file_name.strip() + ".md"
         print "creating new file %s" % page_name
         with open(page_name, "w") as page_file:
-            page_file.write(post_data.edit_text)
+            page_file.write(post_data.edit_text.encode('utf-8'))
         raise webpy.seeother('/wiki/%s' % page_name)
 
 class Delete:
