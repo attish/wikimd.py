@@ -220,7 +220,8 @@ def index_data():
         if git_status.get(fn) == "d": return span_add % \
             (fn, "glyphicon glyphicon-exclamation-sign")
         if git_status.get(fn) == "s": return span % "glyphicon glyphicon-time" 
-        if git_status.get(fn) == "n": return span % "glyphicon glyphicon-question-sign" 
+        if git_status.get(fn) == "n": return span_add % \
+            (fn, "glyphicon glyphicon-question-sign")
         if git_status.get(fn) == "r": return span % "glyphicon glyphicon-trash" 
         if git_status.get(fn) == "c": return span % "glyphicon glyphicon-ok-sign" 
         return ""
