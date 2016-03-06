@@ -253,8 +253,8 @@ def index_data():
             notrack = subprocess.check_output(git_cmd_notrack).splitlines()
             removed = subprocess.check_output(git_cmd_removed).splitlines()
             for f in clean: git_status[f] = "c"
-            for f in dirty: git_status[f] = "d"
             for f in staged: git_status[f] = "s"
+            for f in dirty: git_status[f] = "d"
             for f in notrack: git_status[f] = "n"
             for f in removed: git_status[f] = "r"
             filelist = git_status.keys()
