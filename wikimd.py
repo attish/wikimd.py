@@ -31,6 +31,7 @@ urls = (
     '/git', 'Git',
     '/git/([0-9a-f]+)', 'CommitIndex',
     '/git/([0-9a-f]+)/(.+)', 'GitFrame',
+    '/git-commit', 'GitCommit',
     '/longpoll-git/([0-9]+)', 'LongPollGit',
     '/longpoll-count', 'CountLongPoll',
     '/stop', 'Stop',
@@ -112,6 +113,13 @@ html_editable_live_boiler = html_boiler_common % {
             "scripts": live_script, 
         }
 
+html_commitable_live_boiler = html_boiler_common % {
+            "style": "%(style)s", 
+            "toplinks": '|&nbsp;<a href="/git-commit">Commit</a>', 
+            "content": "%(content)s", 
+            "scripts": live_script, 
+        }
+
 edit_boiler = """
     <h1>Edit %(page_name)s</h1>
     <form action="/save/%(page_name)s" method="post">
@@ -145,6 +153,17 @@ error_boiler = """
   %s
 </div>
 """
+
+commit_boiler = """
+    <h1>Commit changes</h1>
+    <form action="/git-commit" method="post">
+        <p>
+            <input name="message" type="text" class="form-control" placeholder="Commit message"></input>
+            <textarea name="optional" class="form-control" rows="15" id="edit_text" style="width: 100%%; overflow: hidden; word-wrap: break-word; resize: horizontal;" placeholder="Notes (optional)"></textarea>
+        </p>
+        <input type="submit" value="Save"></form>
+"""
+
 
 def register_long_poll(session_id):
     # This cleans up long_poll entries that have not been removed when the
@@ -402,7 +421,7 @@ class Index:
     def GET(self):
         randnum = random.randint(0, 2000000000)
         longpoll_url = '/longpoll-index/%d' % randnum 
-        page = html_live_boiler % {
+        page = html_commitable_live_boiler % {
                 "style": style,
                 "content": index_data(),
                 "longpoll_url": longpoll_url,
@@ -476,6 +495,22 @@ class Add:
         git_command = ("git add " + page_name).split()
         output, git_error = run_command_blocking(git_command)
         if git_error: return "error"
+        raise webpy.seeother('/')
+
+class GitCommit:
+    def GET(self):
+        page = html_static_boiler % {"style": style, "content": commit_boiler}
+        return page
+
+    def POST(self):
+        msg = webpy.input().get("message", "")
+        opt = webpy.input().get("optional", "")
+        if msg.strip() != "":
+            git_command = "git commit -m".split()
+            git_command.append(msg + "\n\n" + opt)
+            output, git_error = run_command_blocking(git_command)
+            raise webpy.seeother('/git')
+        print "empty commit message"
         raise webpy.seeother('/')
 
 class CountLongPoll:
