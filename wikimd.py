@@ -486,6 +486,9 @@ class Delete:
         if webpy.input().get("confirm", "") == "on":
             if page_name.endswith(".md"):
                 os.remove(page_name)
+            if is_git:
+                git_command = ("git rm " + page_name).split()
+                output, git_error = run_command_blocking(git_command)
             print "DELETED %s" % page_name
             raise webpy.seeother('/')
         raise webpy.seeother('/wiki/%s' % page_name)
