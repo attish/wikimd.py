@@ -161,7 +161,7 @@ commit_boiler = """
             <input name="message" type="text" class="form-control" placeholder="Commit message"></input>
             <textarea name="optional" class="form-control" rows="15" id="edit_text" style="width: 100%%; overflow: hidden; word-wrap: break-word; resize: horizontal;" placeholder="Notes (optional)"></textarea>
         </p>
-        <input type="submit" value="Save"></form>
+        <input type="submit" value="Commit"></form>
 """
 
 
@@ -508,13 +508,14 @@ class GitCommit:
     def POST(self):
         msg = webpy.input().get("message", "")
         opt = webpy.input().get("optional", "")
-        if msg.strip() != "":
-            git_command = "git commit -m".split()
-            git_command.append(msg + "\n\n" + opt)
-            output, git_error = run_command_blocking(git_command)
-            raise webpy.seeother('/git')
-        print "empty commit message"
-        raise webpy.seeother('/')
+        git_command = "git commit -m".split()
+        git_command.append(msg + "\n\n" + opt)
+        output, git_error = run_command_blocking(git_command)
+        if git_error:
+            content = error_boiler % output.replace("\n", "<br>") + commit_boiler
+            page = html_static_boiler % {"style": style, "content": content}
+            return page
+        raise webpy.seeother('/git')
 
 class CountLongPoll:
     def GET(self):
