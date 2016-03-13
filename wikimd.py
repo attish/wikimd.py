@@ -21,6 +21,7 @@ style = open(dir + "/bootstrap-readable.css").read()
 urls = (
     '/', 'Index',
     '/wiki/(.*)', 'Frame',
+    '/tagline/(.*)', 'PageByTagline',
     '/edit/(.*)', 'Edit',
     '/new', 'New',
     '/save/(.*)', 'Save',
@@ -414,6 +415,16 @@ class Frame:
                 "page_name": page_name,
             }
         return page
+
+class PageByTagline:
+    def GET(self, tagline):
+        pwd = os.getcwd()
+        filelist = [f for f in os.listdir(pwd) if f.endswith(".md")]
+        for f in filelist:
+            clean_title = title_line(f).replace(" ", "_").lower()
+            if clean_title == tagline.replace(" ", "_").lower():
+                raise webpy.seeother('/wiki/' + f)
+        webpy.notfound()
 
 class GitFrame:
     def GET(self, commit, page_name):
