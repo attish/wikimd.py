@@ -10,6 +10,7 @@ import datetime
 import time
 import random
 import markdown
+from markdown.extensions.wikilinks import WikiLinkExtension
 import codecs
 
 count = 0
@@ -208,7 +209,10 @@ def raw_file_data(file_name):
 
 def file_data(file_name):
     try:
-        return markdown.markdown(raw_file_data(file_name), tab_length=2)
+        return markdown.markdown(raw_file_data(file_name),
+            tab_length=2,
+            extensions=[WikiLinkExtension(base_url='/tagline/',
+                                          end_url='')])
     except:
         return error_boiler % "File is no longer available."
 
