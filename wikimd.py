@@ -127,6 +127,15 @@ edit_boiler = """
     <form action="/save/%(page_name)s" method="post">
         <p><textarea name="edit_text" class="form-control" rows="15" id="edit_text" style="width: 100%%; overflow: hidden; word-wrap: break-word; resize: horizontal;">%(text)s</textarea></p>
         <input type="submit" value="Save"></form>
+    <script>
+        function autosave() {
+            $.post(
+                '%(autosave_url)s',
+                {'edit_text': $('#edit_text').val()});
+                    setTimeout('autosave()', 10000);
+        }
+        autosave();
+    </script>
 """
 
 new_boiler = """
@@ -464,9 +473,11 @@ class Git:
 
 class Edit:
     def GET(self, page_name):
+        autosave_url = '/save/%s' % page_name 
         content = edit_boiler % {
                 "page_name": page_name,
                 "text": raw_file_data(page_name),
+                "autosave_url": autosave_url,
             }
         page = html_static_boiler % {"style": style, "content": content}
         return page
