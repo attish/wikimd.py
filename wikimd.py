@@ -95,31 +95,31 @@ live_script = """
 """
 
 html_static_boiler = html_boiler_common % {
-            "style": "%(style)s", 
-            "toplinks": "", 
-            "content": "%(content)s", 
+            "style": "%(style)s",
+            "toplinks": "",
+            "content": "%(content)s",
             "scripts": "",
         }
 
 html_live_boiler = html_boiler_common % {
-            "style": "%(style)s", 
-            "toplinks": "", 
-            "content": "%(content)s", 
-            "scripts": live_script, 
+            "style": "%(style)s",
+            "toplinks": "",
+            "content": "%(content)s",
+            "scripts": live_script,
         }
 
 html_editable_live_boiler = html_boiler_common % {
-            "style": "%(style)s", 
-            "toplinks": '|&nbsp;<a href="/edit/%(page_name)s">Edit</a>&nbsp;|&nbsp;<a href="/delete/%(page_name)s">Delete</a>', 
-            "content": "%(content)s", 
-            "scripts": live_script, 
+            "style": "%(style)s",
+            "toplinks": '|&nbsp;<a href="/edit/%(page_name)s">Edit</a>&nbsp;|&nbsp;<a href="/delete/%(page_name)s">Delete</a>',
+            "content": "%(content)s",
+            "scripts": live_script,
         }
 
 html_commitable_live_boiler = html_boiler_common % {
-            "style": "%(style)s", 
-            "toplinks": '|&nbsp;<a href="/git-commit">Commit</a>', 
-            "content": "%(content)s", 
-            "scripts": live_script, 
+            "style": "%(style)s",
+            "toplinks": '|&nbsp;<a href="/git-commit">Commit</a>',
+            "content": "%(content)s",
+            "scripts": live_script,
         }
 
 edit_boiler = """
@@ -254,11 +254,11 @@ def index_data():
         span_add = "<a href='/add/%s'><span class='%s'></span></a>"
         if git_status.get(fn) == "d": return span_add % \
             (fn, "glyphicon glyphicon-exclamation-sign")
-        if git_status.get(fn) == "s": return span % "glyphicon glyphicon-time" 
+        if git_status.get(fn) == "s": return span % "glyphicon glyphicon-time"
         if git_status.get(fn) == "n": return span_add % \
             (fn, "glyphicon glyphicon-question-sign")
-        if git_status.get(fn) == "r": return span % "glyphicon glyphicon-trash" 
-        if git_status.get(fn) == "c": return span % "glyphicon glyphicon-ok-sign" 
+        if git_status.get(fn) == "r": return span % "glyphicon glyphicon-trash"
+        if git_status.get(fn) == "c": return span % "glyphicon glyphicon-ok-sign"
         return ""
 
     def make_link(fn, deleted):
@@ -446,7 +446,7 @@ class GitFrame:
 class Index:
     def GET(self):
         randnum = random.randint(0, 2000000000)
-        longpoll_url = '/longpoll-index/%d' % randnum 
+        longpoll_url = '/longpoll-index/%d' % randnum
         page = html_commitable_live_boiler % {
                 "style": style,
                 "content": index_data(),
@@ -463,7 +463,7 @@ class CommitIndex:
 class Git:
     def GET(self):
         randnum = random.randint(0, 2000000000)
-        longpoll_url = '/longpoll-git/%d' % randnum 
+        longpoll_url = '/longpoll-git/%d' % randnum
         page = html_live_boiler % {
                 "style": style,
                 "content": git_data(),
@@ -473,7 +473,7 @@ class Git:
 
 class Edit:
     def GET(self, page_name):
-        autosave_url = '/save/%s' % page_name 
+        autosave_url = '/save/%s' % page_name
         content = edit_boiler % {
                 "page_name": page_name,
                 "text": raw_file_data(page_name),
