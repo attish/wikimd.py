@@ -77,12 +77,13 @@ html_boiler_common = """
 
 live_script = """
         function getContent() {
+            var content = $('#content').html()
             $.ajax({
                 url: '%(longpoll_url)s',
                 dataType: 'text',
                 type: 'get',
                 success: function(doc){
-                    if (doc != "") {
+                    if (doc != "" && doc != content) {
                         $('#content').fadeTo(1, 0);
                         $('#content').html(doc);
                         $('#content').fadeTo(500, 1);
@@ -132,7 +133,7 @@ edit_boiler = """
             $.post(
                 '%(autosave_url)s',
                 {'edit_text': $('#edit_text').val()});
-                    setTimeout('autosave()', 10000);
+                    setTimeout('autosave()', 5000);
         }
         autosave();
     </script>
