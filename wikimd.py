@@ -213,8 +213,10 @@ def file_data(file_name):
         return markdown.markdown(raw_file_data(file_name),
             tab_length=2,
             extensions=[WikiLinkExtension(base_url='/tagline/',
-                                          end_url='')])
-    except:
+                                          end_url=''),
+                        'markdown.extensions.extra',
+                        'markdown.extensions.sane_lists'])
+    except Exception as exc:
         return error_boiler % "File is no longer available."
 
 def git_file_data(commit, file_name):
