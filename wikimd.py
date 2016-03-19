@@ -217,7 +217,7 @@ def file_data(file_name):
                         'markdown.extensions.extra',
                         'markdown.extensions.sane_lists'])
     except Exception as exc:
-        return error_boiler % "File is no longer available."
+        return error_boiler % str(exc)
 
 def git_file_data(commit, file_name):
     git_command = ("git show " + commit + ":" + file_name).split()
