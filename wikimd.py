@@ -285,7 +285,11 @@ def index_data():
         try:
             git_all = subprocess.check_output(git_cmd_all).splitlines()
             dirty = subprocess.check_output(git_cmd_dirty).splitlines()
-            staged = subprocess.check_output(git_cmd_staged).splitlines()
+            # `git diff --staged` will fail for new repos
+            try:
+                staged = subprocess.check_output(git_cmd_staged).splitlines()
+            except Exception as e:
+                staged = []
             clean = [f for f in git_all if f not in (dirty + staged)]
             notrack = subprocess.check_output(git_cmd_notrack).splitlines()
             removed = subprocess.check_output(git_cmd_removed).splitlines()
