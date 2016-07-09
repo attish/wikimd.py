@@ -247,7 +247,10 @@ def title_line(file_name):
 def git_title_line(commit, file_name):
     git_command = ("git show " + commit + ":" + file_name).split()
     file_lines = run_command(git_command)
-    return file_lines.next().decode("utf-8")
+    try:
+        return file_lines.next().decode("utf-8")
+    except StopIteration as e:
+        return file_name
 
 def index_data():
     def status_icon(fn):
