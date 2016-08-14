@@ -13,6 +13,8 @@ import markdown
 from markdown.extensions.wikilinks import WikiLinkExtension
 import codecs
 
+LONGPOLL_LENGTH = 60
+
 count = 0
 long_polls = {}
 dir = os.path.dirname(os.path.realpath(__file__))
@@ -361,7 +363,7 @@ class LongPoll:
         counter = 0
         while last_seen == file_mtime(page_name):
             counter += 1
-            if counter >= 10:
+            if counter >= LONGPOLL_LENGTH:
                 print "stop %s long poll." % page_name
                 unregister_long_poll(session_id)
                 return ""
@@ -380,7 +382,7 @@ class LongPollIndex:
         counter = 0
         while last_dir == get_dir():
             counter += 1
-            if counter >= 10:
+            if counter >= LONGPOLL_LENGTH:
                 print "stop index long poll."
                 unregister_long_poll(session_id)
                 return ""
@@ -403,7 +405,7 @@ class LongPollGit:
             # Stop long poll after a while,
             # The window may have been closed meanwhile
             counter += 1
-            if counter >= 10:
+            if counter >= LONGPOLL_LENGTH:
                 print "stop git long poll."
                 unregister_long_poll(session_id)
                 return ""
