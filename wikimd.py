@@ -128,7 +128,7 @@ html_commitable_live_boiler = html_boiler_common % {
 edit_boiler = """
     <h1>Edit %(page_name)s</h1>
     <form action="/save/%(page_name)s" method="post">
-        <p><textarea name="edit_text" class="form-control" rows="15" id="edit_text" style="width: 100%%; overflow: hidden; word-wrap: break-word; resize: horizontal;">%(text)s</textarea></p>
+        <p><textarea name="edit_text" class="form-control" rows="15" id="edit_text" style="width: 100%%; overflow-y: scroll; word-wrap: break-word; resize: vertical; height:500px">%(text)s</textarea></p>
         <input type="submit" value="Save"></form>
     <script>
         function autosave() {
